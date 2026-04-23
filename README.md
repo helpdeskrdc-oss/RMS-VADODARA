@@ -1,4 +1,4 @@
-# R&D Portal: A Comprehensive Research Management System
+# R&D Portal: A Comprehensive Research Management System.
 
 This is a comprehensive, full-stack web application designed to streamline and manage the entire research lifecycle at any university. It serves as a central hub for faculty, evaluators, and administrators to handle Intramural (IMR) and Extramural (EMR) research projects, user management, incentive claims, and grant tracking.
 
