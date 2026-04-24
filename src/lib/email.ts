@@ -110,9 +110,6 @@ export async function sendEmail({ to, cc, bcc, subject, html, attachments, from 
   }
   
   let finalBcc = bcc;
-  if ((category === 'IMR' || category === 'EMR') && ADMIN_EMAIL) {
-    finalBcc = bcc ? `${bcc}, ${ADMIN_EMAIL}` : ADMIN_EMAIL;
-  }
 
   const mailOptions = {
     from: fromAddress,
