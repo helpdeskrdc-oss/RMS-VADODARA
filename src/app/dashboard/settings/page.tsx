@@ -45,6 +45,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import NextImage from 'next/image';
 import { useDepartments } from "@/hooks/use-staff-data";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -226,10 +227,6 @@ export default function SettingsPage() {
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const departmentOptions = departments.map((dept) => ({ label: dept, value: dept }))
-  const isPrincipal = useMemo(() => user?.designation === "Principal", [user])
-  const isCro = useMemo(() => user?.role === "CRO", [user])
-
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [newAllowedDomain, setNewAllowedDomain] = useState("")
@@ -279,6 +276,14 @@ export default function SettingsPage() {
 
   const dummyForm = useForm(); // For the incentive approvers section
 
+  const isPrincipal = useMemo(() => user?.designation === "Principal", [user])
+  const isCro = useMemo(() => user?.role === "CRO", [user])
+  const isAcademicInfoLocked = isCro || isPrincipal
+  const selectedCampus = profileForm.watch('campus');
+  const { departments: allDepartments } = useDepartments(selectedCampus);
+  const departments = useMemo(() => allDepartments, [allDepartments]);
+  const departmentOptions = departments.map((dept) => ({ label: dept, value: dept }))
+
 
 
   useEffect(() => {
@@ -323,9 +328,7 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const selectedCampus = profileForm.watch('campus');
-  const { departments: allDepartments } = useDepartments(selectedCampus);
-  const departments = useMemo(() => allDepartments, [allDepartments]);
+
 
   useEffect(() => {
     const currentInstitute = profileForm.getValues('institute');
@@ -657,7 +660,7 @@ export default function SettingsPage() {
   ];
 
 
-  const isAcademicInfoLocked = isCro || isPrincipal
+
 
   if (loading) {
     return (
