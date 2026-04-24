@@ -141,8 +141,27 @@ export async function getStaffDataAction(params: {
     };
 
     if (fetchAll) {
-        searchAndAddAll(staffdata, 'Vadodara');
-        searchAndAddAll(goastaffdata, 'Goa');
+        if (!email && !misId) {
+            // Return everything from both sources
+            staffdata.forEach(row => {
+                const uniqueKey = row.Email ? row.Email.toLowerCase() : String(row['MIS ID']).toLowerCase();
+                if (!foundEmails.has(uniqueKey)) {
+                    allFoundRecords.push(formatStaffRecord(row, 'Vadodara'));
+                    foundEmails.add(uniqueKey);
+                }
+            });
+            goastaffdata.forEach(row => {
+                const uniqueKey = row.Email ? row.Email.toLowerCase() : String(row['MIS ID']).toLowerCase();
+                if (!foundEmails.has(uniqueKey)) {
+                    allFoundRecords.push(formatStaffRecord(row, 'Goa'));
+                    foundEmails.add(uniqueKey);
+                }
+            });
+        } else {
+            // Filter but allow multiple (e.g. searching for a shared MIS ID)
+            searchAndAddAll(staffdata, 'Vadodara');
+            searchAndAddAll(goastaffdata, 'Goa');
+        }
     } else if (email) {
         const isGoaEmail = email.toLowerCase().endsWith('@goa.paruluniversity.ac.in');
         searchAndAdd(isGoaEmail ? goastaffdata : staffdata, isGoaEmail ? 'Goa' : 'Vadodara');

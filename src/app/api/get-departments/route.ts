@@ -5,7 +5,7 @@ import { getStaffDataAction } from '@/lib/staff-service';
 export async function GET(request: NextRequest) {
   const start = performance.now();
   const { searchParams } = new URL(request.url);
-  const campus = searchParams.get('campus') || 'Vadodara';
+  const campus = searchParams.get('campus');
 
   try {
     const staffRecords = await getStaffDataAction({ fetchAll: true });
