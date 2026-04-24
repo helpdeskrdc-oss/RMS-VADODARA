@@ -1,3 +1,4 @@
+import '@/lib/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -17,9 +18,12 @@ export async function checkAuth(options: {
   const sessionToken = cookieStore.get('session')?.value;
 
   if (!sessionToken) {
+    console.error('[checkAuth] Missing session token in cookies');
     if (shouldRedirect) redirect(redirectTo);
     return { authenticated: false, error: 'Missing session token' };
   }
+
+  console.log('[checkAuth] Found session token, verifying...');
 
   try {
     const decodedToken = await getAuth().verifyIdToken(sessionToken);

@@ -13,7 +13,13 @@ function ensureAdminInitialized() {
   // If another part of the code initialized an app, use it.
   if (admin.apps.length > 0 && admin.apps[0]) {
     app = admin.apps[0];
-    console.log("Firebase Admin SDK re-used existing instance.");
+    
+    // If the re-used app doesn't have a databaseURL, we might need to warn
+    if (!app.options.databaseURL && process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) {
+      console.warn("Firebase Admin SDK re-used existing instance, but it lacks a databaseURL. RTDB calls may fail.");
+    } else {
+      console.log("Firebase Admin SDK re-used existing instance.");
+    }
     return;
   }
 
@@ -79,28 +85,38 @@ function getService<T>(serviceGetter: () => T): T {
 export const adminAuth = new Proxy({} as admin.auth.Auth, {
   get(target, prop) {
     const service = getService(() => admin.auth());
-    return Reflect.get(service, prop);
+    const value = Reflect.get(service, prop);
+    return typeof value === "function" ? value.bind(service) : value;
   },
 });
 
 export const adminDb = new Proxy({} as admin.firestore.Firestore, {
   get(target, prop) {
     const service = getService(() => admin.firestore());
-    return Reflect.get(service, prop);
+    const value = Reflect.get(service, prop);
+    return typeof value === "function" ? value.bind(service) : value;
   },
 });
 
 export const adminRtdb = new Proxy({} as admin.database.Database, {
     get(target, prop) {
-      const service = getService(() => admin.database());
-      return Reflect.get(service, prop);
+      const service = getService(() => {
+        const db = admin.database();
+        if (!app?.options.databaseURL) {
+            throw new Error("Firebase Realtime Database accessed but NEXT_PUBLIC_FIREBASE_DATABASE_URL is missing from environment variables.");
+        }
+        return db;
+      });
+      const value = Reflect.get(service, prop);
+      return typeof value === "function" ? value.bind(service) : value;
     },
 });
 
 export const adminStorage = new Proxy({} as admin.storage.Storage, {
   get(target, prop) {
     const service = getService(() => admin.storage());
-    return Reflect.get(service, prop);
+    const value = Reflect.get(service, prop);
+    return typeof value === "function" ? value.bind(service) : value;
   },
 });
 

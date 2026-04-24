@@ -14,6 +14,7 @@ import { format } from "date-fns"
 import ExcelJS from "exceljs"
 import { checkAuth } from "@/lib/check-auth"
 import { getIncentiveClaimByIdCombined, getAllClaimsCombinedAdmin } from "@/lib/incentive-data-admin"
+import { revalidateTag } from "next/cache"
 
 export async function checkPatentUniqueness(title: string, applicationNumber: string, currentClaimId?: string): Promise<{ isUnique: boolean; message?: string }> {
   try {
@@ -141,6 +142,7 @@ export async function updateIncentiveClaimStatus(claimId: string, newStatus: Inc
       })
     }
 
+    revalidateTag('incentive-claims');
     return { success: true }
   } catch (error: any) {
     console.error("Error updating incentive claim status:", error)
@@ -492,6 +494,7 @@ export async function submitIncentiveClaim(
     }
 
     await logActivity('INFO', 'Incentive claim submitted', { claimId: standardizedClaimId, userId: claimData.uid });
+    revalidateTag('incentive-claims');
     return { success: true, claimId: claimId };
   } catch (error: any) {
     await logActivity('ERROR', 'Failed to submit incentive claim', { error: error.message });
@@ -517,6 +520,7 @@ export async function deleteIncentiveClaim(claimId: string, _userId?: string): P
       return { success: false, error: "Failed to delete." };
     }
     await logActivity('INFO', 'Incentive claim draft deleted', { claimId, userId: session.uid });
+    revalidateTag('incentive-claims');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -643,6 +647,7 @@ export async function processIncentiveClaimAction(
     }
 
     await logActivity('INFO', `Incentive claim action processed`, { claimId, action, stage: stageIndex + 1 });
+    revalidateTag('incentive-claims');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -680,6 +685,7 @@ export async function markPaymentsCompleted(claimIds: string[]): Promise<{ succe
       count++;
     }
     await batch.commit();
+    revalidateTag('incentive-claims');
     return { success: true, processedCount: count };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -705,8 +711,7 @@ export async function submitToAccounts(claimIds: string[]): Promise<{ success: b
         count++;
       }
     }
-    // batch.commit is still needed if other things were in batch, but here only updates were there (commented out)
-    // Actually batch also contains notifications etc, so we keep it if needed.
+    revalidateTag('incentive-claims');
     return { success: true, processedCount: count };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -744,6 +749,7 @@ export async function generateIncentivePaymentSheet(claimIds: string[], remarks:
       }
     }
     await batch.commit();
+    revalidateTag('incentive-claims');
     const buffer = await workbook.xlsx.writeBuffer();
     return { success: true, fileData: Buffer.from(buffer).toString('base64'), includedCount: payableClaims.length };
   } catch (error: any) {

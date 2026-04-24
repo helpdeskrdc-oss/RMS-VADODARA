@@ -60,7 +60,7 @@ import type { User, SystemSettings, Project, EmrInterest } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { auth, db } from "@/lib/config"
-import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth"
+import { signOut, onIdTokenChanged, type User as FirebaseUser } from "firebase/auth"
 import { useToast } from "@/hooks/use-toast"
 import { collection, onSnapshot, query, where, doc, getDoc } from "firebase/firestore"
 import { getDefaultModulesForRole } from "@/lib/modules"
@@ -402,7 +402,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+    const unsubscribeAuth = onIdTokenChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (unsubscribeProfile) unsubscribeProfile()
       clearTimeout(retryTimeout)
 

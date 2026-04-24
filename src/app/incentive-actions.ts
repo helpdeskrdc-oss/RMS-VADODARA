@@ -10,6 +10,7 @@ import Docxtemplater from 'docxtemplater';
 import { getTemplateContentFromUrl } from '@/lib/template-manager';
 import { format } from 'date-fns';
 import { getSystemSettings } from './actions';
+import { unstable_cache } from 'next/cache';
 
 export async function generateBookIncentiveForm(claimId: string): Promise<{ success: boolean; fileData?: string; error?: string }> {
   try {
@@ -107,7 +108,7 @@ export async function generateBookIncentiveForm(claimId: string): Promise<{ succ
  * Fetches incentive claims from both Firestore and RTDB, merges them and applies role-based filtering.
  * This runs on the server to bypass RTDB security rule limitations for complex client-side queries.
  */
-export async function fetchAllClaimsAction(user: User): Promise<IncentiveClaim[]> {
+async function fetchAllClaimsInternal(user: User): Promise<IncentiveClaim[]> {
   if (!user) return [];
 
   try {
@@ -174,9 +175,19 @@ export async function fetchAllClaimsAction(user: User): Promise<IncentiveClaim[]
     });
 
   } catch (error) {
-    console.error("Error in fetchAllClaimsAction:", error);
+    console.error("Error in fetchAllClaimsInternal:", error);
     return [];
   }
+}
+
+const getCachedIncentiveClaims = unstable_cache(
+  async (user: User) => fetchAllClaimsInternal(user),
+  ['incentive-claims'],
+  { revalidate: 3600, tags: ['incentive-claims'] }
+);
+
+export async function fetchAllClaimsAction(user: User): Promise<IncentiveClaim[]> {
+  return getCachedIncentiveClaims(user);
 }
 
 /**

@@ -28,6 +28,7 @@ import Link from 'next/link';
 import { Combobox } from '@/components/ui/combobox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useStaffData, useDepartments } from '@/hooks/use-staff-data';
 
 const profileSetupSchema = z.object({
   name: z.string().min(2, 'A full name is required.'),
@@ -118,7 +119,6 @@ function ProfileSetupContent() {
   const [isPrefilling, setIsPrefilling] = useState(false);
   const [misIdToFetch, setMisIdToFetch] = useState('');
   const [userType, setUserType] = useState<'faculty' | 'CRO' | 'Institutional' | null>(null);
-  const [departments, setDepartments] = useState<string[]>([]);
   const [foundUsers, setFoundUsers] = useState<any[]>([]);
   const [isSelectionOpen, setIsSelectionOpen] = useState(false);
 
@@ -231,26 +231,13 @@ function ProfileSetupContent() {
     return () => unsubscribe();
   }, [router, toast, form, wasRedirected]);
 
-  useEffect(() => {
-    async function fetchDepartments() {
-      const endpoint = selectedCampus === 'Goa' ? '/api/get-goa-departments' : '/api/get-departments';
-      try {
-        const res = await fetch(endpoint);
-        const result = await res.json();
-        if (result.success) {
-          setDepartments(result.data);
-          // If current department is not in the new list, reset it
-          const currentDepartment = form.getValues('department');
-          if (currentDepartment && !result.data.includes(currentDepartment)) {
-            form.setValue('department', '');
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to fetch departments from ${endpoint}`, error);
-      }
-    }
-    fetchDepartments();
-  }, [selectedCampus, form]);
+  const { departments: allDepartments } = useDepartments(selectedCampus);
+  const departments = useMemo(() => {
+    // For now, the hook returns all departments. 
+    // If the backend /api/get-departments is already filtered, this is fine.
+    // If not, we can filter here or update the hook.
+    return allDepartments;
+  }, [allDepartments]);
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

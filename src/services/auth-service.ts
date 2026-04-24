@@ -215,12 +215,14 @@ export async function saveSidebarOrder(uid: string, newOrder: string[]): Promise
 export async function setSession(idToken: string) {
   try {
     const cookieStore = await cookies();
+    console.log('[setSession] Setting session cookie...');
     cookieStore.set('session', idToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' && process.env.VERCEL === '1',
       maxAge: 60 * 60 * 24 * 5, // 5 days
       path: '/',
     });
+    console.log('[setSession] Session cookie set successfully');
     return { success: true };
   } catch (error) {
     console.error('Failed to set session cookie:', error);

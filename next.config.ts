@@ -78,15 +78,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0, must-revalidate',
-          },
-        ],
-      },
+      // Individual API routes will manage their own Cache-Control headers
     ];
   },
 };

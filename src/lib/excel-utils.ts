@@ -71,7 +71,7 @@ export async function readExcelFromBuffer<T>(buffer: ArrayBuffer): Promise<T[]> 
  */
 export async function readExcelFromUrl<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url);
     if (!response.ok) {
         console.error(`Failed to fetch Excel from ${url}: ${response.statusText}`);
         return [];

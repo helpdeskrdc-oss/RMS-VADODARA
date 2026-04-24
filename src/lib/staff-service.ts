@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { readExcelFromUrl } from './excel-utils';
 
 export interface StaffData {
@@ -37,40 +38,35 @@ export interface FormattedStaffUser {
     uid?: string;
 }
 
-const GOA_STAFF_DATA_URL = 'https://pinxoxpbufq92wb4.public.blob.vercel-storage.com/goastaffdata.xlsx';
-const VADODARA_STAFF_DATA_URL = 'https://pinxoxpbufq92wb4.public.blob.vercel-storage.com/staffdatabrc.xlsx';
+const GOA_STAFF_DATA_URL = 'https://lhdlkrfbkon55i6u.public.blob.vercel-storage.com/goastaffdata.json';
+const VADODARA_STAFF_DATA_URL = 'https://lhdlkrfbkon55i6u.public.blob.vercel-storage.com/staffdatabrc.json';
 
-// --- Shared Cache ---
-const staffCache: {
-    [url: string]: {
-        data: StaffData[];
-        timestamp: number;
+/**
+ * Fetches staff data with persistent caching.
+ * Uses unstable_cache to ensure data persists across serverless function invocations.
+ */
+const getCachedStaffData = unstable_cache(
+    async (url: string) => {
+        console.log(`[Cache Miss] Fetching staff data from: ${url}`);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to fetch staff data JSON: ${res.statusText}`);
+        const data = await res.json();
+        return data || [];
+    },
+    ['staff-data-cache'],
+    { 
+        revalidate: 86400, // 24 hours
+        tags: ['staff']
     }
-} = {};
-
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+);
 
 async function readStaffDataFromUrlWithCache(url: string): Promise<StaffData[]> {
-    const now = Date.now();
-    
-    // Hardened cache check: Ensure data exists and TTL is strictly honored [CRIT-07]
-    if (staffCache[url] && staffCache[url].data && (now - staffCache[url].timestamp < CACHE_TTL)) {
-        return staffCache[url].data;
-    }
-    
     try {
-        const data = await readExcelFromUrl<StaffData>(url);
-        if (data && Array.isArray(data) && data.length > 0) {
-            staffCache[url] = { data, timestamp: now };
-            return data;
-        }
+        return await getCachedStaffData(url);
     } catch (error) {
         console.error(`Failed to fetch staff data from ${url}:`, error);
-        // If fetch fails, return partial stale data if available as fallback, or empty
-        if (staffCache[url]?.data) return staffCache[url].data;
+        return [];
     }
-    
-    return [];
 }
 
 export function formatStaffRecord(record: StaffData, defaultCampus: string): FormattedStaffUser {

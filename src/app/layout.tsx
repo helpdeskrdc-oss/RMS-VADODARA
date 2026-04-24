@@ -9,6 +9,7 @@ import { FirebaseNotConfigured } from '@/components/firebase-not-configured';
 import { AuthInitializer } from '@/components/AuthInitializer';
 import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/react';
+import { SWRProvider } from '@/components/providers/swr-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const sourceCodePro = Source_Code_Pro({ subsets: ['latin'], variable: '--font-source-code-pro' });
@@ -118,9 +119,11 @@ gtag('config', 'G-QV5WLS9XRG');`}
           enableSystem
           disableTransitionOnChange
         >
-          <AuthInitializer>
-            {children}
-          </AuthInitializer>
+          <SWRProvider>
+            <AuthInitializer>
+              {children}
+            </AuthInitializer>
+          </SWRProvider>
           <Toaster />
         </ThemeProvider>
         <Analytics />

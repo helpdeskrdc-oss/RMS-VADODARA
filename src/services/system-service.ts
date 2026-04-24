@@ -8,14 +8,25 @@ import { GovernanceLogger } from "@/lib/governance-logger"
 import { logEvent, LogCategory } from "@/lib/logger"
 import { logActivity } from "./utils"
 
-export async function getSystemSettings(): Promise<SystemSettings> {
-  try {
+import { unstable_cache, revalidateTag } from 'next/cache';
+
+const getCachedSettings = unstable_cache(
+  async () => {
+    console.log("[Cache Miss] Fetching system settings from Firestore...");
     const settingsRef = adminDb.collection("system").doc("settings")
     const settingsSnap = await settingsRef.get()
     if (settingsSnap.exists) {
       return settingsSnap.data() as SystemSettings
     }
     return { is2faEnabled: false, allowedDomains: [], croAssignments: [] }
+  },
+  ['system-settings-cache'],
+  { revalidate: 86400, tags: ['system'] }
+);
+
+export async function getSystemSettings(): Promise<SystemSettings> {
+  try {
+    return await getCachedSettings();
   } catch (error) {
     console.error("Error fetching system settings:", error)
     return { is2faEnabled: false, allowedDomains: [], croAssignments: [] }
@@ -28,6 +39,7 @@ export async function updateSystemSettings(settings: SystemSettings): Promise<{ 
     const oldSettings = await getSystemSettings();
 
     await settingsRef.set(settings, { merge: true })
+    revalidateTag('system');
     
     await GovernanceLogger.logEntityChange(
         'main',

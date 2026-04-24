@@ -3,6 +3,27 @@ import { adminDb, adminAuth } from '@/lib/admin';
 import type { User } from '@/types';
 import { searchStaffByNameAction } from '@/lib/staff-service';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { unstable_cache } from 'next/cache';
+
+const getCachedUsers = unstable_cache(
+    async () => {
+        console.log("[Cache Miss] Fetching all users for search index...");
+        const usersRef = adminDb.collection('users');
+        const querySnapshot = await usersRef.orderBy('name').get();
+        return querySnapshot.docs.map(doc => {
+            const userData = doc.data() as User;
+            return {
+                uid: doc.id,
+                name: userData.name,
+                email: userData.email,
+                misId: userData.misId || 'N/A',
+                campus: userData.campus || 'Vadodara'
+            };
+        });
+    },
+    ['all-users-search-index'],
+    { revalidate: 3600, tags: ['users'] }
+);
 
 export async function GET(request: NextRequest) {
     try {
@@ -41,20 +62,8 @@ export async function GET(request: NextRequest) {
         const lowercasedName = name?.toLowerCase() || '';
         const lowercasedMisId = misId?.toLowerCase() || '';
 
-        // 1. Search existing users in Firestore
-        const usersRef = adminDb.collection('users');
-        const querySnapshot = await usersRef.orderBy('name').get();
-
-        const allUsers = querySnapshot.docs.map(doc => {
-            const userData = doc.data() as User;
-            return {
-                uid: doc.id,
-                name: userData.name,
-                email: userData.email,
-                misId: userData.misId || 'N/A',
-                campus: userData.campus || 'Vadodara'
-            };
-        });
+        // 1. Search existing users in Firestore (Cached)
+        const allUsers = await getCachedUsers();
 
         let filteredUsers: any[] = allUsers;
         if (lowercasedName) {

@@ -637,9 +637,6 @@ export function ResearchPaperForm() {
               authors: draftData.authors || [],
               publicationProof: undefined,
             });
-            if (draftData.authors) {
-                setAuthors(draftData.authors);
-            }
           } else {
             toast({ variant: 'destructive', title: result.error || 'Draft Not Found' });
           }

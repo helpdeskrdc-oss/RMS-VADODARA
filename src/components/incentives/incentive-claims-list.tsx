@@ -14,39 +14,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { db, db_rtdb } from '@/lib/config';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { db_rtdb } from '@/lib/config';
 import { ref, update } from 'firebase/database';
 import type { IncentiveClaim } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIncentiveClaims } from '@/hooks/use-staff-data';
 
 const STATUSES: IncentiveClaim['status'][] = ['Pending', 'Accepted', 'Rejected'];
 
 export function IncentiveClaimsList() {
-  const [claims, setClaims] = useState<IncentiveClaim[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { claims, isLoading: loading, mutate } = useIncentiveClaims();
   const { toast } = useToast();
-
-  const fetchClaims = useCallback(async () => {
-    setLoading(true);
-    try {
-      const claimsCollection = collection(db, 'incentiveClaims');
-      const q = query(claimsCollection, orderBy('submissionDate', 'desc'));
-      const claimSnapshot = await getDocs(q);
-      const claimList = claimSnapshot.docs.map(claimDoc => ({ ...claimDoc.data(), id: claimDoc.id } as IncentiveClaim));
-      setClaims(claimList);
-    } catch (error) {
-      console.error("Error fetching claims:", error);
-      toast({ variant: 'destructive', title: "Error", description: "Could not fetch incentive claims." });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchClaims();
-  }, [fetchClaims]);
 
   const handleStatusChange = useCallback(async (id: string, newStatus: IncentiveClaim['status']) => {
     try {
@@ -68,12 +47,12 @@ export function IncentiveClaimsList() {
 
 
       toast({ title: 'Status Updated', description: "The claim's status has been changed." });
-      fetchClaims(); 
+      mutate(); 
     } catch (error) {
        console.error("Error updating status:", error);
        toast({ variant: 'destructive', title: "Error", description: "Could not update status." });
     }
-  }, [fetchClaims, toast]);
+  }, [mutate, toast]);
 
   
   if (loading) {

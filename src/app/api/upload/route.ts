@@ -1,31 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadFileToServer } from "@/app/actions";
-import { getAuth } from "firebase-admin/auth";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
+import { adminAuth, adminStorage } from "@/lib/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-function ensureFirebaseAdminInitialized() {
-  if (getApps().length) return;
-
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\n/g, "\n");
-  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-
-  if (!projectId || !clientEmail || !privateKey || !storageBucket) {
-    throw new Error("Firebase Admin credentials are not configured");
-  }
-
-  initializeApp({
-    credential: cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
-    storageBucket,
-  });
-}
 
 // Configuration
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -41,7 +17,6 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    ensureFirebaseAdminInitialized();
 
     // 1. Authenticate user
     const authHeader = req.headers.get("authorization");
@@ -56,7 +31,7 @@ export async function POST(req: NextRequest) {
     let userId: string;
 
     try {
-      const decodedToken = await getAuth().verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
       userId = decodedToken.uid;
     } catch (error) {
       return NextResponse.json(
@@ -208,7 +183,7 @@ export async function POST(req: NextRequest) {
     if (!uploadUrl) {
       try {
         const fileName = `uploads/${userId}/${Date.now()}-${file.name}`;
-        const bucket = getStorage().bucket();
+        const bucket = adminStorage.bucket();
         const fileRef = bucket.file(fileName);
 
         await fileRef.save(buffer, {

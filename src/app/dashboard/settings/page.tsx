@@ -44,7 +44,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import NextImage from 'next/image';
-import { Checkbox } from "@/components/ui/checkbox"
+import { useDepartments } from "@/hooks/use-staff-data";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -226,7 +226,6 @@ export default function SettingsPage() {
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [departments, setDepartments] = useState<string[]>([])
   const departmentOptions = departments.map((dept) => ({ label: dept, value: dept }))
   const isPrincipal = useMemo(() => user?.designation === "Principal", [user])
   const isCro = useMemo(() => user?.role === "CRO", [user])
@@ -325,27 +324,8 @@ export default function SettingsPage() {
   }, [])
 
   const selectedCampus = profileForm.watch('campus');
-
-  useEffect(() => {
-    async function fetchDepartments() {
-      const endpoint = selectedCampus === 'Goa' ? '/api/get-goa-departments' : '/api/get-departments';
-      try {
-        const res = await fetch(endpoint);
-        const result = await res.json();
-        if (result.success) {
-          setDepartments(result.data);
-          // If current department is not in the new list, reset it
-          const currentDepartment = profileForm.getValues('department');
-          if (currentDepartment && !result.data.includes(currentDepartment)) {
-            profileForm.setValue('department', '');
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to fetch departments from ${endpoint}`, error);
-      }
-    }
-    fetchDepartments();
-  }, [selectedCampus, profileForm]);
+  const { departments: allDepartments } = useDepartments(selectedCampus);
+  const departments = useMemo(() => allDepartments, [allDepartments]);
 
   useEffect(() => {
     const currentInstitute = profileForm.getValues('institute');

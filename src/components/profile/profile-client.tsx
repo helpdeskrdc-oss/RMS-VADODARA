@@ -8,6 +8,8 @@ import { uploadFileToServer } from '@/app/actions';
 import { updateEmrInterestDetails } from '@/app/emr-actions';
 import { findUserByMisId } from '@/app/userfinding';
 import { addResearchPaper, checkUserOrStaff, updateResearchPaper, deleteResearchPaper, manageCoAuthorRequest } from '@/app/actions';
+import { useResearchPapers } from '@/hooks/use-staff-data';
+import { mutate } from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -477,7 +479,7 @@ function EditBulkEmrDialog({ interest, isOpen, onOpenChange, onUpdate }: { inter
 export function ProfileClient({ user, projects, emrInterests: initialEmrInterests, fundingCalls, claims }: { user: User; projects: Project[], emrInterests: EmrInterest[], fundingCalls: FundingCall[], claims: IncentiveClaim[] }) {
     const [domain, setDomain] = useState<string | null>(user.researchDomain || null);
     const [loadingDomain, setLoadingDomain] = useState(false);
-    const [researchPapers, setResearchPapers] = useState<ResearchPaper[]>([]);
+    const { papers: researchPapers, isLoading: loadingPapers } = useResearchPapers(user.uid);
     const [emrInterests, setEmrInterests] = useState(initialEmrInterests);
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
     const [paperToEdit, setPaperToEdit] = useState<ResearchPaper | null>(null);
@@ -488,26 +490,13 @@ export function ProfileClient({ user, projects, emrInterests: initialEmrInterest
     const { toast } = useToast();
     const [sessionUser, setSessionUser] = useState<User | null>(null);
 
-    const fetchPapers = async () => {
-        try {
-            const res = await fetch(`/api/get-research-papers?userUid=${user.uid}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success) { setResearchPapers(data.papers || []); }
-                 else { setResearchPapers([]); }
-            } else { setResearchPapers([]); }
-        } catch (paperError) { setResearchPapers([]); }
-    };
-
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) { setSessionUser(JSON.parse(storedUser)); }
-        fetchPapers();
-    }, [user.uid]);
+    }, []);
     
     const handlePaperSuccess = (paper: ResearchPaper, isNew: boolean) => {
-        if (isNew) { setResearchPapers(prev => [paper, ...prev]); } 
-        else { setResearchPapers(prev => prev.map(p => p.id === paper.id ? paper : p)); }
+        mutate(`/api/get-research-papers?userUid=${user.uid}`);
         if (paper.domain) setDomain(paper.domain);
     };
 
@@ -516,7 +505,7 @@ export function ProfileClient({ user, projects, emrInterests: initialEmrInterest
         const result = await deleteResearchPaper(paperToDelete.id, sessionUser.uid);
         if (result.success) {
             toast({ title: "Paper Deleted" });
-            setResearchPapers(prev => prev.filter(p => p.id !== paperToDelete.id));
+            mutate(`/api/get-research-papers?userUid=${user.uid}`);
             setPaperToDelete(null);
         } else {
             toast({ title: "Error", description: result.error, variant: "destructive" });
@@ -530,7 +519,7 @@ export function ProfileClient({ user, projects, emrInterests: initialEmrInterest
             const result = await manageCoAuthorRequest(paper.id, author, 'reject');
             if(result.success) {
                 toast({title: "Request Rejected"});
-                fetchPapers();
+                mutate(`/api/get-research-papers?userUid=${user.uid}`);
             } else {
                 toast({title: "Error", description: result.error, variant: "destructive"});
             }
@@ -548,7 +537,7 @@ export function ProfileClient({ user, projects, emrInterests: initialEmrInterest
             toast({title: "Co-Author Approved"});
             setManagingRequest(null);
             setAssignedRole('');
-            fetchPapers();
+            mutate(`/api/get-research-papers?userUid=${user.uid}`);
         } else {
             toast({title: "Error", description: result.error, variant: "destructive"});
         }

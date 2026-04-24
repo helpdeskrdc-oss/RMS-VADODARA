@@ -58,7 +58,11 @@ export async function GET(request: NextRequest) {
         metadata: { endpoint: '/api/get-staff-data', method: 'GET', statusCode: 200, latency_ms, email, misId },
         status: 'info'
         });
-        return NextResponse.json({ success: true, data: allFoundRecords });
+        return NextResponse.json({ success: true, data: allFoundRecords }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400'
+            }
+        });
     } else {
         return NextResponse.json({ success: true, data: [], message: `User not found in the staff data file.` });
     }

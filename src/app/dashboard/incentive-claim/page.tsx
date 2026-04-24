@@ -29,8 +29,8 @@ import {
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { fetchAllClaimsAction } from '@/app/actions';
 import { getSystemSettings, deleteIncentiveClaim } from '@/app/actions';
+import { useIncentiveClaims } from '@/hooks/use-staff-data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -882,83 +882,71 @@ export default function IncentiveClaimPage() {
     const searchParams = useSearchParams();
 
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [userClaims, setUserClaims] = useState<IncentiveClaim[]>([]);
-    const [coAuthorClaims, setCoAuthorClaims] = useState<IncentiveClaim[]>([]);
+    const { claims: allClaims, isLoading: claimsLoading, mutate } = useIncentiveClaims(user?.uid);
     const { toast } = useToast();
     const [selectedClaim, setSelectedClaim] = useState<IncentiveClaim | null>(null);
     const [claimToDelete, setClaimToDelete] = useState<IncentiveClaim | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [membershipClaimInfo, setMembershipClaimInfo] = useState<{ canClaim: boolean; nextAvailableDate?: string }>({ canClaim: true });
     const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'apply');
     const [searchQuery, setSearchQuery] = useState('');
     const [myClaimsStatusFilter, setMyClaimsStatusFilter] = useState('all');
     const isMobile = useIsMobile();
 
-    const fetchAllData = useCallback(async (uid: string, email: string) => {
-        setLoading(true);
+    const userClaims = useMemo(() => {
+        if (!user || !allClaims) return [];
+        return allClaims.filter(c => c.uid === user.uid);
+    }, [allClaims, user]);
+
+    const coAuthorClaims = useMemo(() => {
+        if (!user || !allClaims) return [];
+        return allClaims.filter(c =>
+            c.uid !== user.uid &&
+            !c.originalClaimId &&
+            (c.authorUids?.includes(user.uid) || (c.authorEmails?.includes(user.email.toLowerCase())))
+        );
+    }, [allClaims, user]);
+
+    const membershipClaimInfo = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const claimInCurrentYear = userClaims.find(c =>
+            c.claimType === 'Membership of Professional Bodies' &&
+            c.status !== 'Draft' &&
+            c.status !== 'Rejected' &&
+            new Date(c.submissionDate).getFullYear() === currentYear
+        );
+
+        if (claimInCurrentYear) {
+            const nextYear = currentYear + 1;
+            const nextDate = new Date(nextYear, 0, 1);
+            return { canClaim: false, nextAvailableDate: format(nextDate, 'PPP') };
+        }
+        return { canClaim: true };
+    }, [userClaims]);
+
+    const [settingsLoading, setSettingsLoading] = useState(false);
+    const fetchSettings = useCallback(async () => {
+        setSettingsLoading(true);
         try {
-            const combinedClaims = await fetchAllClaimsAction({ uid, email, role: 'faculty' } as User);
-
-            // 1. My Claims (where user is primary author)
-            const ownedClaims = combinedClaims.filter(c => c.uid === uid);
-            setUserClaims(ownedClaims);
-
-            // 2. Membership Eligibility check (using owned claims)
-            const currentYear = new Date().getFullYear();
-            const claimInCurrentYear = ownedClaims.find(c =>
-                c.claimType === 'Membership of Professional Bodies' &&
-                c.status !== 'Draft' &&
-                c.status !== 'Rejected' &&
-                new Date(c.submissionDate).getFullYear() === currentYear
-            );
-
-            if (claimInCurrentYear) {
-                const nextYear = currentYear + 1;
-                const nextDate = new Date(nextYear, 0, 1);
-                setMembershipClaimInfo({ canClaim: false, nextAvailableDate: format(nextDate, 'PPP') });
-            } else {
-                setMembershipClaimInfo({ canClaim: true });
-            }
-
-            // 3. Co-author Claims
-            // Filter claims where user is listed as co-author but not primary author, 
-            // and exclude co-author-derived claims (originalClaimId check).
-            const coAuthorList = combinedClaims.filter(c =>
-                c.uid !== uid &&
-                !c.originalClaimId &&
-                (c.authorUids?.includes(uid) || (c.authorEmails?.includes(email.toLowerCase())))
-            );
-
-            setCoAuthorClaims(coAuthorList);
-
             const settings = await getSystemSettings();
             setSystemSettings(settings);
-
-        } catch (error: any) {
-            console.error("Error fetching data:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Could not fetch your data: " + error.message });
-        } finally {
-            setLoading(false);
+        } catch (e) {} finally {
+            setSettingsLoading(false);
         }
-    }, [toast]);
+    }, []);
+
+    const loading = claimsLoading || settingsLoading;
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
+            fetchSettings();
         } else {
-            setLoading(false);
+            setSettingsLoading(false);
         }
-    }, []);
-
-    useEffect(() => {
-        if (user) {
-            fetchAllData(user.uid, user.email);
-        }
-    }, [user, fetchAllData]);
+    }, [fetchSettings]);
 
     useEffect(() => {
         const currentTab = searchParams.get('tab');
@@ -988,7 +976,7 @@ export default function IncentiveClaimPage() {
             const result = await deleteIncentiveClaim(claimToDelete.id, user.uid);
             if (result.success) {
                 toast({ title: "Draft Deleted" });
-                fetchAllData(user.uid, user.email);
+                mutate();
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             }
@@ -1232,7 +1220,7 @@ export default function IncentiveClaimPage() {
                             {loading ? <Skeleton className="h-40 w-full" /> : <UserClaimsList claims={filteredOtherClaims} claimType="other" onViewDetails={handleViewDetails} onDeleteClaim={() => { }} />}
                         </TabsContent>
                         <TabsContent value="co-author" className="mt-4">
-                            {loading ? <Skeleton className="h-40 w-full" /> : <CoAuthorClaimsList claims={coAuthorClaims} currentUser={user} onClaimApplied={() => fetchAllData(user!.uid, user!.email)} />}
+                            {loading ? <Skeleton className="h-40 w-full" /> : <CoAuthorClaimsList claims={coAuthorClaims} currentUser={user} onClaimApplied={() => mutate()} />}
                         </TabsContent>
                         <TabsContent value="draft" className="mt-4">
                             {loading ? <Skeleton className="h-40 w-full" /> : <UserClaimsList claims={draftClaims} claimType="draft" onViewDetails={handleViewDetails} onDeleteClaim={(id) => setClaimToDelete(userClaims.find(c => c.id === id) || null)} />}
