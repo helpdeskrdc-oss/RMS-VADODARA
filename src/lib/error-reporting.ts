@@ -17,6 +17,15 @@ export const reportSystemError = async (error: any, user: User | null, action?: 
 
     if (isIndexError || isFirebaseError) {
         try {
+            // Deduplication logic using sessionStorage
+            const errorKey = `reported_error_${errorMessage.substring(0, 50)}_${window.location.pathname}`;
+            const alreadyReported = sessionStorage.getItem(errorKey);
+            
+            if (alreadyReported) {
+                console.log("System Error already reported to helpdesk in this session, skipping email.");
+                return;
+            }
+
             await reportErrorToHelpdesk(
                 { 
                     message: errorMessage, 
@@ -26,6 +35,8 @@ export const reportSystemError = async (error: any, user: User | null, action?: 
                 user,
                 action
             );
+            
+            sessionStorage.setItem(errorKey, new Date().toISOString());
             console.log("CRITICAL: Error details sent to helpdesk.rdc@paruluniversity.ac.in");
         } catch (reportingError) {
             console.error("Failed to report error to helpdesk:", reportingError);

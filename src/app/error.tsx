@@ -26,12 +26,21 @@ export default function Error({
     const parsedUser = storedUser ? JSON.parse(storedUser) : null;
     setUser(parsedUser);
     
-    // Send email report
-    sendErrorEmail(
-      { message: error.message, digest: error.digest },
-      parsedUser,
-      window.location.href
-    ).catch(e => console.error("Failed to send error report email:", e));
+    // Send email report with deduplication
+    const errorKey = `reported_ui_error_${error.message.substring(0, 50)}_${window.location.pathname}`;
+    const alreadyReported = sessionStorage.getItem(errorKey);
+
+    if (!alreadyReported) {
+      sendErrorEmail(
+        { message: error.message, digest: error.digest },
+        parsedUser,
+        window.location.href
+      ).then(() => {
+        sessionStorage.setItem(errorKey, new Date().toISOString());
+      }).catch(e => console.error("Failed to send error report email:", e));
+    } else {
+      console.log("UI Error already reported in this session, skipping email.");
+    }
 
     // Log to observability system
     logFrontendAction('FRONTEND', 'Unhandled UI Exception', {
