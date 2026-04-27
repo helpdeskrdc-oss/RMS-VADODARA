@@ -99,12 +99,12 @@ const bookSchema = z
     path: ["bookTitleForChapter"],
   })
 
-  .refine((data) => !(data.bookApplicationType === "Book") || (!!data.publisherCity && data.publisherCity.length > 0), {
-    message: "Publisher city is required for book publications.",
+  .refine((data) => !(data.bookApplicationType === "Book") || (!data.publisherCity || data.publisherCity.length > 0), {
+    message: "Publisher city must be valid if provided.",
     path: ["publisherCity"],
   })
-  .refine((data) => !(data.bookApplicationType === "Book") || (!!data.publisherCountry && data.publisherCountry.length > 0), {
-    message: "Publisher country is required for book publications.",
+  .refine((data) => !(data.bookApplicationType === "Book") || (!data.publisherCountry || data.publisherCountry.length > 0), {
+    message: "Publisher country must be valid if provided.",
     path: ["publisherCountry"],
   })
   .refine((data) => !(data.bookApplicationType === "Book") || !!data.publicationMode, {
@@ -119,12 +119,12 @@ const bookSchema = z
     message: "A valid Electronic ISBN is required.",
     path: ["isbnElectronic"],
   })
-  .refine((data) => !(data.bookApplicationType === "Book") || !!data.authorRole, {
-    message: "Applicant type is required for book publications.",
+  .refine((data) => !(data.bookApplicationType === "Book") || (!data.authorRole || data.authorRole.length > 0), {
+    message: "Applicant type must be valid if provided.",
     path: ["authorRole"],
   })
-  .refine((data) => !(data.bookApplicationType === "Book") || (data.bookTotalChapters !== undefined && data.bookTotalChapters >= 0), {
-    message: "Total chapters are required for book publications.",
+  .refine((data) => !(data.bookApplicationType === "Book") || (data.bookTotalChapters === undefined || data.bookTotalChapters >= 0), {
+    message: "Total chapters must be valid if provided.",
     path: ["bookTotalChapters"],
   })
   .refine(data => data.bookProofUrl || (data.bookProof && data.bookProof.length > 0), {
@@ -1066,3 +1066,4 @@ export function BookForm() {
     </div>
   )
 }
+
