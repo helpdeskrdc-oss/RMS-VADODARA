@@ -356,6 +356,7 @@ export type IncentiveClaim = {
   flightTicketsUrl?: string
   conferenceSelfDeclaration?: boolean
   totalAuthors?: string;
+  conferenceProofUrl?: string;
 
   // Workshop/Training/FDP fields
   workshopName?: string;

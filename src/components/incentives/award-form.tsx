@@ -39,6 +39,7 @@ const awardSchema = z.object({
   paymentDate: z.string().optional(),
   awardDate: z.string().min(1, "Date of award is required."),
   awardProof: z.array(z.string()).min(1, "At least one proof document is required.").max(10, "Maximum 10 files allowed."),
+  awardLocale: z.string().optional(),
   awardSelfDeclaration: z.boolean().refine((val) => val === true, {
     message: "You must confirm the self-declaration.",
   }),
@@ -484,7 +485,9 @@ export function AwardForm({ user }: { user: User }) {
                     <div className="flex items-center justify-between">
                       <span>
                         Your Profile details (Bank, ORCID, MIS) must be complete to apply.
-                        <Button variant="link" onClick={() => router.push("/dashboard/settings")} className="text-destructive font-black underline p-0 h-auto ml-2">Settings</Button>
+                        <Button asChild variant="link" className="text-destructive font-black underline p-0 h-auto ml-2">
+                          <Link href="/dashboard/settings">Settings</Link>
+                        </Button>
                       </span>
                     </div>
                   </AlertDescription>
@@ -512,7 +515,7 @@ export function AwardForm({ user }: { user: User }) {
                 </div>
 
                 <FormField
-                  control={form.control}
+                  control={form.control as any}
                   name="awardTitle"
                   render={({ field }) => (
                     <FormItem>
@@ -527,7 +530,7 @@ export function AwardForm({ user }: { user: User }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="awardingBody"
                     render={({ field }) => (
                       <FormItem>
@@ -541,7 +544,7 @@ export function AwardForm({ user }: { user: User }) {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="awardDate"
                     render={({ field }) => (
                       <FormItem>
@@ -557,7 +560,7 @@ export function AwardForm({ user }: { user: User }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="awardStature"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
@@ -580,7 +583,7 @@ export function AwardForm({ user }: { user: User }) {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="awardBodyType"
                     render={({ field }) => (
                       <FormItem>
@@ -605,7 +608,7 @@ export function AwardForm({ user }: { user: User }) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="awardCategory"
                     render={({ field }) => (
                       <FormItem>
@@ -628,7 +631,7 @@ export function AwardForm({ user }: { user: User }) {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="isPaidAward"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
@@ -657,7 +660,7 @@ export function AwardForm({ user }: { user: User }) {
 
 
                 <FormField
-                  control={form.control}
+                  control={form.control as any}
                   name="awardLocale"
                   render={({ field }) => (
                     <FormItem>
@@ -683,7 +686,7 @@ export function AwardForm({ user }: { user: User }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="membershipNumber"
                     render={({ field }) => (
                       <FormItem>
@@ -697,7 +700,7 @@ export function AwardForm({ user }: { user: User }) {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={form.control as any}
                     name="amountPaid"
                     render={({ field }) => (
                       <FormItem>
@@ -777,7 +780,7 @@ export function AwardForm({ user }: { user: User }) {
                 </div>
 
                 <FormField
-                  control={form.control}
+                  control={form.control as any}
                   name="awardProof"
                   render={() => (
                     <FormItem className="space-y-4">

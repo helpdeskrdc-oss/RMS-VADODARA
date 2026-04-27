@@ -26,10 +26,11 @@ export async function getAllUsers(): Promise<User[]> {
 
 export async function sendLoginOtp(email: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const rateLimit = await checkRateLimit(`otp-send-${email}`, { points: 3, duration: 300 }); // 3 attempts per 5 mins
+    const rateLimit = await checkRateLimit(`otp-send-${email}`, { points: 10, duration: 300 }); // Increased to 10 attempts per 5 mins
     if (!rateLimit.success) {
       return { success: false, error: "Too many attempts. Please try again later." }
     }
+
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiresAt = Date.now() + 10 * 60 * 1000 // 10 minutes from now
@@ -67,7 +68,7 @@ export async function sendLoginOtp(email: string): Promise<{ success: boolean; e
 
 export async function verifyLoginOtp(email: string, otp: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const rateLimit = await checkRateLimit(`otp-verify-${email}`, { points: 5, duration: 600 }); // 5 attempts per 10 mins
+    const rateLimit = await checkRateLimit(`otp-verify-${email}`, { points: 15, duration: 600 }); // Increased to 15 attempts per 10 mins
     if (!rateLimit.success) {
       return { success: false, error: "Too many failed attempts. Please request a new OTP." }
     }

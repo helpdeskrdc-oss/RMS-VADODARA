@@ -49,16 +49,16 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 async function logLoginEvent(category: LogCategory, message: string, user?: User | any, status: 'success' | 'error' | 'warning' = 'success', error?: string) {
-    try {
-        await logFrontendAction(category, message, {
-            user,
-            status,
-            metadata: error ? { error } : {},
-            path: '/login'
-        });
-    } catch (err) {
-        console.error("Failed to log internal event:", err);
-    }
+  try {
+    await logFrontendAction(category, message, {
+      user,
+      status,
+      metadata: error ? { error } : {},
+      path: '/login'
+    });
+  } catch (err) {
+    console.error("Failed to log internal event:", err);
+  }
 }
 
 export default function LoginPage() {
@@ -69,7 +69,7 @@ export default function LoginPage() {
   const [isOtpOpen, setIsOtpOpen] = useState(false)
   const [pendingUser, setPendingUser] = useState<LoginFormValues | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -173,15 +173,15 @@ export default function LoginPage() {
     if (!user.allowedModules || user.allowedModules.length === 0) {
       user.allowedModules = getDefaultModulesForRole(user.role, user.designation)
     }
-    
+
     const systemSettings = await getSystemSettings();
     const approverSetting = systemSettings.incentiveApprovers?.find(a => a.email.toLowerCase() === user.email.toLowerCase());
-    
+
     if (approverSetting) {
-        const approverModule = `incentive-approver-${approverSetting.stage}`;
-        if (!user.allowedModules?.includes(approverModule)) {
-            user.allowedModules = [...(user.allowedModules || []), approverModule, 'incentive-approvals'];
-        }
+      const approverModule = `incentive-approver-${approverSetting.stage}`;
+      if (!user.allowedModules?.includes(approverModule)) {
+        user.allowedModules = [...(user.allowedModules || []), approverModule, 'incentive-approvals'];
+      }
     }
 
 
@@ -189,7 +189,7 @@ export default function LoginPage() {
     if (!regResult.success) {
       throw new Error(regResult.error || "Failed to update user in database.");
     }
-    
+
     await logLoginEvent('AUTH', 'User logged in successfully', user);
 
     try {
@@ -239,32 +239,38 @@ export default function LoginPage() {
     if (!pendingUser) return;
     setIsSubmitting(true);
     try {
-        const otpResult = await verifyLoginOtp(pendingUser.email, otp);
-        if (!otpResult.success) {
-            throw new Error(otpResult.error || "Invalid OTP");
-        }
-        
-        // Now that OTP is verified, sign the user in
-        const userCredential = await signInWithEmailAndPassword(auth, pendingUser.email, pendingUser.password);
-        setIsOtpOpen(false);
-        await processSignIn(userCredential.user);
+      const otpResult = await verifyLoginOtp(pendingUser.email, otp);
+      if (!otpResult.success) {
+        throw new Error(otpResult.error || "Invalid OTP");
+      }
+
+      // Now that OTP is verified, sign the user in
+      const userCredential = await signInWithEmailAndPassword(auth, pendingUser.email, pendingUser.password);
+      setIsOtpOpen(false);
+      await processSignIn(userCredential.user);
     } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Verification Failed",
-            description: error.message || "An error occurred.",
-        });
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: error.message || "An error occurred.",
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const onEmailSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true)
     try {
+      // Verify credentials first to avoid sending OTP for invalid passwords
+      // This also ensures the Firebase SDK is correctly initialized before sending OTP
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password)
+
       const settings = await getSystemSettings()
-      
+
       if (settings.is2faEnabled && data.email !== "vicepresident_86@paruluniversity.ac.in") {
+        // Sign out for now to ensure OTP verification is required as a second step
+        await signOut(auth)
         setPendingUser(data);
         const otpResult = await sendLoginOtp(data.email);
         if (otpResult.success) {
@@ -273,11 +279,15 @@ export default function LoginPage() {
           throw new Error(otpResult.error || "Failed to send OTP.");
         }
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password)
         await processSignIn(userCredential.user)
       }
     } catch (error: any) {
-      console.error("Login error:", error)
+      console.error("Login error full object:", {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+        customData: error.customData
+      })
       toast({
         variant: "destructive",
         title: "Login Failed",
@@ -287,6 +297,7 @@ export default function LoginPage() {
             : error.message || "An unknown error occurred.",
       })
       await logLoginEvent('AUTH', 'Login attempt failed', { email: data.email }, 'error', error.message);
+
     } finally {
       setIsSubmitting(false)
     }
@@ -343,12 +354,12 @@ export default function LoginPage() {
       setIsSubmitting(false)
     }
   }
-  
+
   if (loading) {
     return (
-        <div className="flex flex-col min-h-screen items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
+      <div className="flex flex-col min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
     )
   }
 
@@ -439,10 +450,10 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                 >
                   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4">
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.23 0 12 0 7.31 0 3.25 2.69 1.28 6.61l3.99 3.1C6.21 6.86 8.87 4.75 12 4.75z"/>
-                    <path fill="#4285F4" d="M23.49 12.27c0-.78-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.13 2.74-2.39 3.59l3.86 3c2.26-2.09 3.55-5.18 3.55-8.83z"/>
-                    <path fill="#FBBC05" d="M5.26 14.29c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29L1.27 6.61C.46 8.23 0 10.06 0 12s.46 3.77 1.27 5.39l3.99-3.1z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.97-1.06 7.94-2.91l-3.86-3c-1.08.72-2.46 1.15-4.08 1.15-3.13 0-5.78-2.11-6.73-4.95L1.27 17.39C3.25 21.31 7.31 24 12 24z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.23 0 12 0 7.31 0 3.25 2.69 1.28 6.61l3.99 3.1C6.21 6.86 8.87 4.75 12 4.75z" />
+                    <path fill="#4285F4" d="M23.49 12.27c0-.78-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.13 2.74-2.39 3.59l3.86 3c2.26-2.09 3.55-5.18 3.55-8.83z" />
+                    <path fill="#FBBC05" d="M5.26 14.29c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29L1.27 6.61C.46 8.23 0 10.06 0 12s.46 3.77 1.27 5.39l3.99-3.1z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.97-1.06 7.94-2.91l-3.86-3c-1.08.72-2.46 1.15-4.08 1.15-3.13 0-5.78-2.11-6.73-4.95L1.27 17.39C3.25 21.31 7.31 24 12 24z" />
                   </svg>
                   Sign in with Google
                 </Button>

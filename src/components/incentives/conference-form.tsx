@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/config"
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
 import type { User, IncentiveClaim, Author } from "@/types"
 import { uploadFileToApi } from "@/lib/upload-client"
 import { Loader2, AlertCircle, Info, Edit, Trash2, CheckCircle2, FileText, X, Globe, MapPin, Calendar, Award, Bot, ChevronDown } from "lucide-react"
@@ -814,7 +815,9 @@ function ConferenceFormContent({ user, onEventTypeChange }: { user: User; onEven
                 <AlertTitle className="font-bold">Profile Update Required</AlertTitle>
                 <AlertDescription className="flex items-center justify-between">
                   <span>Your Profile details (Bank, ORCID, MIS) must be complete to apply.</span>
-                  <Button variant="link" onClick={() => router.push("/dashboard/settings")} className="text-destructive font-black underline p-0 h-auto">Settings</Button>
+                  <Button asChild variant="link" className="text-destructive font-black underline p-0 h-auto">
+                    <Link href="/dashboard/settings">Settings</Link>
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
@@ -850,11 +853,11 @@ function ConferenceFormContent({ user, onEventTypeChange }: { user: User; onEven
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Event Classification</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={isFormDisabled}>
-                    <FormControl><SelectTrigger className="h-12 shadow-sm"><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
-                    <SelectContent>{eventTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                      <FormControl><SelectTrigger className="h-12 shadow-sm"><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                      <SelectContent>{eventTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )} />
 
                 <FormField name="conferenceMode" control={form.control} render={({ field }) => (

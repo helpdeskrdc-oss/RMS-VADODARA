@@ -711,7 +711,9 @@ export function BookForm() {
                   <AlertDescription>
                     <div className="flex items-center justify-between">
                       <span>Your Profile details (Bank, ORCID, MIS) must be complete to apply.</span>
-                      <Button variant="link" onClick={() => router.push("/dashboard/settings")} className="text-destructive font-black underline p-0 h-auto">Settings</Button>
+                      <Button asChild variant="link" className="text-destructive font-black underline p-0 h-auto">
+                        <Link href="/dashboard/settings">Settings</Link>
+                      </Button>
                     </div>
                   </AlertDescription>
                 </Alert>

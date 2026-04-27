@@ -55,6 +55,8 @@ function initializeFirebase() {
     }
 
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+
     auth = getAuth(app);
     db = getFirestore(app);
     db_rtdb = getDatabase(app);

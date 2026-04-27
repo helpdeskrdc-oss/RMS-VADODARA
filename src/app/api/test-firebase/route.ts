@@ -19,20 +19,20 @@ export async function GET(request: NextRequest) {
       hasDatabaseUrl: !!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
     };
 
-    
+
     // Test Service Account Variable
     if (results.debug.environment.hasProjectId && results.debug.environment.hasClientEmail && results.debug.environment.hasPrivateKey) {
-        results.tests.serviceAccount = {
-            status: "success",
-            message: "All required Firebase Admin environment variables are present.",
-        };
+      results.tests.serviceAccount = {
+        status: "success",
+        message: "All required Firebase Admin environment variables are present.",
+      };
     } else {
-         results.tests.serviceAccount = {
-            status: "error",
-            message: "One or more required Firebase Admin environment variables (NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are missing.",
-        };
+      results.tests.serviceAccount = {
+        status: "error",
+        message: "One or more required Firebase Admin environment variables (NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are missing.",
+      };
     }
-    
+
     // Test Firestore connection
     try {
       const testCollection = adminDb.collection("_health_check");

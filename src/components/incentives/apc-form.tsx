@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import Link from "next/link"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -259,33 +260,33 @@ export function ApcForm({ user }: { user: User }) {
     const internalAuthorsCount = authors.filter((a: any) => !a.isExternal).length || 1;
     let actualPaid = 0;
     if (apcTotalAmount) {
-        actualPaid = parseFloat(String(apcTotalAmount).replace(/[^0-9.]/g, '')) || 0;
+      actualPaid = parseFloat(String(apcTotalAmount).replace(/[^0-9.]/g, '')) || 0;
     }
-    
+
     let maxLimit = 0;
     const hasScopus = apcIndexingStatus.some((s: string) => s.toLowerCase().includes('scopus') || s.toLowerCase().includes('web of science') || s.toLowerCase().includes('sci'));
     if (hasScopus && apcQRating) {
-        switch (apcQRating) {
-            case 'Q1': maxLimit = 40000; break;
-            case 'Q2': maxLimit = 30000; break;
-            case 'Q3': maxLimit = 20000; break;
-            case 'Q4': maxLimit = 15000; break;
-        }
+      switch (apcQRating) {
+        case 'Q1': maxLimit = 40000; break;
+        case 'Q2': maxLimit = 30000; break;
+        case 'Q3': maxLimit = 20000; break;
+        case 'Q4': maxLimit = 15000; break;
+      }
     } else if (apcIndexingStatus.some((s: string) => s.includes('Web of Science indexed journals (ESCI)'))) {
-        maxLimit = 8000;
+      maxLimit = 8000;
     } else if (apcIndexingStatus.some((s: string) => s.includes('UGC-CARE Group-I'))) {
-        maxLimit = 5000;
+      maxLimit = 5000;
     }
 
     const admissible = maxLimit > 0 ? Math.min(actualPaid, maxLimit) : actualPaid;
     const finalAmount = Math.round(admissible / internalAuthorsCount);
 
     return [
-       { label: '1. Max Policy Limit (by Indexing/Q-Rating)', value: `₹${maxLimit.toLocaleString('en-IN')}` },
-       { label: '2. Actual APC Amount Paid', value: `₹${actualPaid.toLocaleString('en-IN')}` },
-       { label: '3. Admissible Amount (Lesser of above)', value: `₹${admissible.toLocaleString('en-IN')}` },
-       { label: '4. Total Internal PU Authors', value: internalAuthorsCount },
-       { label: '5. Final Individual Share', value: `₹${finalAmount.toLocaleString('en-IN')}` }
+      { label: '1. Max Policy Limit (by Indexing/Q-Rating)', value: `₹${maxLimit.toLocaleString('en-IN')}` },
+      { label: '2. Actual APC Amount Paid', value: `₹${actualPaid.toLocaleString('en-IN')}` },
+      { label: '3. Admissible Amount (Lesser of above)', value: `₹${admissible.toLocaleString('en-IN')}` },
+      { label: '4. Total Internal PU Authors', value: internalAuthorsCount },
+      { label: '5. Final Individual Share', value: `₹${finalAmount.toLocaleString('en-IN')}` }
     ];
   };
 
@@ -561,7 +562,9 @@ export function ApcForm({ user }: { user: User }) {
                 <AlertTitle className="font-bold">Profile Data Missing</AlertTitle>
                 <AlertDescription className="flex items-center justify-between">
                   <span>ORCID, MIS ID, and Bank Details are required to process payments.</span>
-                  <Button variant="link" onClick={() => router.push("/dashboard/settings")} className="text-destructive font-black underline p-0 h-auto">Update Profile</Button>
+                  <Button asChild variant="link" className="text-destructive font-black underline p-0 h-auto">
+                    <Link href="/dashboard/settings">Update Profile</Link>
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
@@ -774,42 +777,42 @@ export function ApcForm({ user }: { user: User }) {
               </div>
 
               {calculatedIncentive !== null && (
-                 <Alert className="bg-primary/5 border-primary/20 py-6 rounded-3xl transition-all animate-in zoom-in-95 border-l-4 border-l-primary shadow-sm hover:shadow-md">
-                   <div className="flex flex-col gap-1.5">
-                      <p className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" /> Estimated Incentive Amount
-                      </p>
-                      <h4 className="text-4xl font-black text-foreground tracking-tight py-1">₹{calculatedIncentive.toLocaleString('en-IN')}</h4>
-                      <p className="text-[10px] text-muted-foreground font-medium italic">Tentative individual share*</p>
-                      
-                      <div className="mt-4 border-t border-primary/10 pt-4">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-xs font-bold w-full flex justify-between items-center text-primary hover:bg-primary/10"
-                          onClick={() => setShowLogic(!showLogic)}
-                          type="button"
-                        >
-                          View Calculation Logic
-                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showLogic ? 'rotate-180' : ''}`} />
-                        </Button>
-                        
-                        {showLogic && (
-                          <div className="mt-3 p-4 bg-background rounded-xl border shadow-inner space-y-2 text-xs font-medium animate-in slide-in-from-top-2">
-                            {getApcLogicBreakdown(form.getValues()).map((step, idx) => (
-                              <div key={idx} className="flex justify-between items-center py-1 border-b last:border-0 border-muted">
-                                <span className="text-muted-foreground">{step.label}</span>
-                                <span className={idx === 4 ? "font-bold text-green-600" : "font-semibold"}>{step.value}</span>
-                              </div>
-                            ))}
-                            <div className="text-[9px] text-muted-foreground italic mt-2 !pt-2 text-center border-t border-muted opacity-70">
-                              *Logic matches official policy matrix evaluated by approvers during technical audit.
+                <Alert className="bg-primary/5 border-primary/20 py-6 rounded-3xl transition-all animate-in zoom-in-95 border-l-4 border-l-primary shadow-sm hover:shadow-md">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" /> Estimated Incentive Amount
+                    </p>
+                    <h4 className="text-4xl font-black text-foreground tracking-tight py-1">₹{calculatedIncentive.toLocaleString('en-IN')}</h4>
+                    <p className="text-[10px] text-muted-foreground font-medium italic">Tentative individual share*</p>
+
+                    <div className="mt-4 border-t border-primary/10 pt-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs font-bold w-full flex justify-between items-center text-primary hover:bg-primary/10"
+                        onClick={() => setShowLogic(!showLogic)}
+                        type="button"
+                      >
+                        View Calculation Logic
+                        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showLogic ? 'rotate-180' : ''}`} />
+                      </Button>
+
+                      {showLogic && (
+                        <div className="mt-3 p-4 bg-background rounded-xl border shadow-inner space-y-2 text-xs font-medium animate-in slide-in-from-top-2">
+                          {getApcLogicBreakdown(form.getValues()).map((step, idx) => (
+                            <div key={idx} className="flex justify-between items-center py-1 border-b last:border-0 border-muted">
+                              <span className="text-muted-foreground">{step.label}</span>
+                              <span className={idx === 4 ? "font-bold text-green-600" : "font-semibold"}>{step.value}</span>
                             </div>
+                          ))}
+                          <div className="text-[9px] text-muted-foreground italic mt-2 !pt-2 text-center border-t border-muted opacity-70">
+                            *Logic matches official policy matrix evaluated by approvers during technical audit.
                           </div>
-                        )}
-                      </div>
-                   </div>
-                 </Alert>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Alert>
               )}
 
               <Separator className="my-4 border-dashed" />
